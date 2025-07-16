@@ -1,0 +1,18 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+   
+<form action="{% url 'new_post' %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+  
+
+    <div id="post-row">
+        <h1 id="title">New Post</h1>
+        <textarea  autofocus= "true" id= "textarea"    name="caption"> </textarea>
+        <input id="button" type= "submit" value="upload">
+    </div>
+
+
+
+{% endblock %}

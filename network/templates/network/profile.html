@@ -1,0 +1,151 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ profile_user.username }}'s Profile</h2>
+    {% if not is_own_profile %}
+      <button id="follow-btn" class="btn btn-primary" data-user-id="{{ profile_user.id }}">
+        {{ follow_status|title }}
+      </button>
+    {% endif %}
+  </div>
+
+  <p><strong>Followers:</strong> {{ followers }} | <strong>Following:</strong> {{ following }}</p>
+
+  {% if is_own_profile and pending_requests %}
+    <h4>Pending Follow Requests</h4>
+    {% for req in pending_requests %}
+      <div class="card my-2 p-3 d-flex justify-content-between align-items-center">
+        <strong>{{ req.Sender.username }}</strong>
+        <div>
+          <button class="btn btn-success btn-sm follow-action" data-user-id="{{ req.Sender.id }}" data-action="accept">Accept</button>
+          <button class="btn btn-danger btn-sm follow-action" data-user-id="{{ req.Sender.id }}" data-action="reject">Reject</button>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if notifications %}
+    <h5 class="mt-4">Notifications</h5>
+    {% for notif in notifications %}
+      <div id="notif-{{ notif.id }}" class="alert alert-info d-flex justify-content-between align-items-center">
+        {{ notif.message }}
+        <button class="btn btn-sm btn-light clear-notif-btn" data-notif-id="{{ notif.id }}">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <h4 class="mt-4">posts</h4>
+  {% for p in post %}
+    <div class="card my-2">
+      <div class="card-body">
+        <p class="card-text">{{ p.caption }}</p>
+        <p class="card-text"><small class="text-muted">{{ p.time }}</small></p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Follow/unfollow button on profile
+  const followBtn = document.getElementById("follow-btn");
+  if (followBtn) {
+    followBtn.addEventListener("click", () => {
+      const userId = followBtn.dataset.userId;
+      fetch("/follow/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "send",
+          user_id: userId
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status) {
+          followBtn.innerText = data.status;
+        } else {
+          console.error("Unexpected response:", data);
+        }
+      })
+      .catch(error => {
+        console.error("Follow error:", error);
+      });
+    });
+  }
+
+  // Accept/reject follow requests
+  document.querySelectorAll('.follow-action').forEach(button => {
+    button.addEventListener('click', () => {
+      const userId = button.dataset.userId;
+      const action = button.dataset.action;
+      handleFollowAction(userId, action);
+    });
+  });
+
+  // Notification clear buttons
+  document.querySelectorAll('.clear-notif-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const notifId = button.dataset.notifId;
+      clearNotif(notifId);
+    });
+  });
+});
+
+// Handles accept/reject actions for follow requests
+function handleFollowAction(userId, action) {
+  fetch("/follow/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: action,
+      user_id: userId
+    })
+  })
+  .then(response => response.json())
+  .then(() => {
+    location.reload();  // Always reload to reflect status
+  })
+  .catch(error => {
+    console.error("Follow action error:", error);
+  });
+}
+
+// Clears a single notification
+function clearNotif(notifId) {
+  fetch("/follow/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "clear_notification",
+      notif_id: notifId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "cleared") {
+      const notifElement = document.getElementById(`notif-${notifId}`);
+      if (notifElement) {
+        notifElement.remove();
+        console.log(`Notification ${notifId} cleared`);
+      }
+    } else if (data.error) {
+      console.warn("Notification error:", data.error);
+    }
+  })
+  .catch(error => {
+    console.error("Clear notification failed:", error);
+  });
+}
+</script>
+
+{% endblock %}
