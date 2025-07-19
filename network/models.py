@@ -39,13 +39,7 @@ def __str__(self):
     return self.user.username
 
 
-class Like(models.Model):
-    user= models.ForeignKey(User, on_delete=models.CASCADE)
-    post= models.ForeignKey(Newpost, on_delete=models.CASCADE)
-    
-    def __str__(self):
-        return f" like on post{self.post.id} by {self.user.username}"
-    
+
 
 class Notification(models.Model):
     user= models.ForeignKey(User, on_delete=models.CASCADE)
